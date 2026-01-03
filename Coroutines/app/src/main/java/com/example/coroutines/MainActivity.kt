@@ -1,47 +1,41 @@
 package com.example.coroutines
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.LaunchedEffect
+import com.example.coroutines.data.UserApiService
+import com.example.coroutines.data.UserRepositoryImpl
 import com.example.coroutines.ui.theme.CoroutinesTheme
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val retrofit = Retrofit.Builder()
+                .baseUrl("https://jsonplaceholder.typicode.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+
+            val userApiService = retrofit.create(UserApiService::class.java)
+            val userRepository = UserRepositoryImpl(userApiService)
+
             CoroutinesTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                LaunchedEffect(true) {
+                    userRepository.getUser(2)
+                        .onSuccess { user ->
+                            Log.d("Retrofit Test", user.firstName + ' ' + user.email)
+                        }
+                        .onFailure { failure ->
+                            Log.d("Retrofit Test", "${failure.message}")
+                        }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    CoroutinesTheme {
-        Greeting("Android")
     }
 }
